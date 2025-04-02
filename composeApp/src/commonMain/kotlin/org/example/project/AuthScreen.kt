@@ -18,21 +18,31 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Composable
 fun AuthScreen() {
     val viewModel = remember { AuthViewModel() }
     val state =  viewModel.state.collectAsState()
+    val event =  viewModel.event.collectAsState(UiEvent.Idle)
 
-    val scope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(event.value){
+        when(event.value){
+            is UiEvent.Navigate -> {
+                snackBarHostState.showSnackbar("Success!")
+            }
+            is UiEvent.ShowSnackBar -> {
+                snackBarHostState.showSnackbar((event.value as UiEvent.ShowSnackBar).message)
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
@@ -53,7 +63,7 @@ fun AuthScreen() {
                 modifier = Modifier
                     .fillMaxWidth(),
                 value = state.value.userName,
-                onValueChange = { viewModel.updateUserName(it) },
+                onValueChange = { viewModel.onEvent(UiEvent.EnterUserName(it)) },
                 label = { Text(text = "UserName") },
                 singleLine = true
             )
@@ -63,7 +73,7 @@ fun AuthScreen() {
                 modifier = Modifier
                     .fillMaxWidth(),
                 value = state.value.password,
-                onValueChange = { viewModel.updatePassword(it) },
+                onValueChange = { viewModel.onEvent(UiEvent.EnterPassword(it)) },
                 label = { Text(text = "Password") },
                 singleLine = true
             )
@@ -73,18 +83,7 @@ fun AuthScreen() {
                 modifier = Modifier
                     .fillMaxWidth(),
                 onClick = {
-                    viewModel.signIn(
-                        onSuccess = {
-                            scope.launch(Dispatchers.Main){
-                                snackBarHostState.showSnackbar("Success")
-                            }
-                        },
-                        onError = { message ->
-                            scope.launch(Dispatchers.Main){
-                                snackBarHostState.showSnackbar(message)
-                            }
-                        }
-                    )
+                    viewModel.signIn()
                 },
                 enabled = !state.value.isLoading
             ) {
