@@ -6,27 +6,41 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class AuthScreenState(
+    val userName: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false
+)
 class AuthViewModel : ViewModel() {
-
-    var userName by mutableStateOf("")
-        private set
-    var password by mutableStateOf("")
-        private set
-    var isLoading by mutableStateOf(false)
-        private set
+    private val _state = MutableStateFlow(AuthScreenState())
+    val state = _state.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AuthScreenState()
+    )
 
     fun updateUserName(value: String) {
-        userName = value
+        _state.update { prev->
+            prev.copy(userName = value)
+        }
     }
 
     fun updatePassword(value: String) {
-        password = value
+        _state.update { prev->
+            prev.copy(password = value)
+        }
     }
 
     fun updateIsLoading(value: Boolean) {
-        isLoading = value
+        _state.update {
+            it.copy(isLoading = value)
+        }
     }
 
     fun signIn(
@@ -35,9 +49,9 @@ class AuthViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             updateIsLoading(value = true)
-            delay(2000)
+            delay(2000L)
             updateIsLoading(value = false)
-            if (userName == "test" && password == "123") {
+            if (_state.value.userName == "test" && _state.value.password == "123") {
                 onSuccess()
             } else {
                 onError("Invalid credentials")

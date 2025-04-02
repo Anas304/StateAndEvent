@@ -18,6 +18,7 @@ import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -28,9 +29,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthScreen() {
     val viewModel = remember { AuthViewModel() }
-    val userName = viewModel.userName
-    val password = viewModel.password
-    val isLoading = viewModel.isLoading
+    val state =  viewModel.state.collectAsState()
 
     val scope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
@@ -53,7 +52,7 @@ fun AuthScreen() {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth(),
-                value = userName,
+                value = state.value.userName,
                 onValueChange = { viewModel.updateUserName(it) },
                 label = { Text(text = "UserName") },
                 singleLine = true
@@ -63,7 +62,7 @@ fun AuthScreen() {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth(),
-                value = password,
+                value = state.value.password,
                 onValueChange = { viewModel.updatePassword(it) },
                 label = { Text(text = "Password") },
                 singleLine = true
@@ -87,10 +86,10 @@ fun AuthScreen() {
                         }
                     )
                 },
-                enabled = !isLoading
+                enabled = !state.value.isLoading
             ) {
                 AnimatedContent(
-                    targetState = isLoading
+                    targetState = state.value.isLoading
                 ) { isLoading ->
                     if (isLoading) {
                         CircularProgressIndicator(
